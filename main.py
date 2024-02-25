@@ -1,43 +1,37 @@
-from langchain.schema import ChatMessage
-from langchain.chat_models import GigaChat
+from langchain.schema import HumanMessage, SystemMessage, AIMessage
+from langchain.chat_models.gigachat import GigaChat
+# from langchain.chains import LLMChain
 import streamlit as st
 
-# Авторизация в сервисе GigaChat
-# chat = GigaChat(credentials=st.secrets['GIGACHAT_API_KEY'])
+# Создаём экземпляр класса GigaChat и авторизируемся
+giga = GigaChat(
+    credentials=st.secrets['GIGACAHT_AUTH'],
+    model='GigaChat:latest',
+    verify_ssl_certs=False
+)
 
 st.title('Чат бот')
 
-# Инициализируем модель LLM
-#if 'llm' not in st.session_state:
-#    st.session_state['llm'] = 'GigaChat:latest'
-
-# Инициализируем историю чата, если сообщений еще не существует
-messages = []
-if messages not in st.session_state:
+# Инициализируем историю чата, если сообщений ещё не существует
+if 'messages' not in st.session_state:
     st.session_state.messages = []
 
-# Показываем все сообщения чата в сессии
+# Показываем все сообщения сессии в контейнере чата
 for message in st.session_state.messages:
-    with st.chat_message(message['role']):
-        st.markdown(message['content'])
+    with st.chat_message(message.type):
+        st.markdown(message.content)
 
 # Инициализируем пользовательский ввод
 promt = st.chat_input(placeholder='Введите сообщение')
 if promt:
-    # Показываем сообщение пользователя в "чат-контейнере"
+    # Показываем сообщение пользователя в контейнере чата
     with st.chat_message('user'):
         st.markdown(promt)
     # Добавляем сообщение пользователя в историю
-    st.session_state.messages.append({'role': 'user', 'content': promt})
-    # Показываем сообщение ассистента в "чат-контейнере"
-    # message_placeholder = st.empty()
-    # full_response = ''
-
-
-    # Ассистент-эхо
-    response = f'Echo: {promt}'
-    # Показываем ответ ассистента в "чат-контейнере"
+    st.session_state.messages.append(HumanMessage(content=promt))
+    # Отправляем запрос и показываем ответ в контейнере чата
+    response = giga(st.session_state.messages).content
     with st.chat_message('assistant'):
         st.markdown(response)
-    # Добавляем ответ ассистента в историю
-    st.session_state.messages.append({'role': 'assistant', 'content': response})
+    # Добавляем ответ LLM в историю
+    st.session_state.messages.append(AIMessage(response))
